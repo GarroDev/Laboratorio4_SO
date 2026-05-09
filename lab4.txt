@@ -1,0 +1,44 @@
+                                 FORMATO PARA REALIZAR  Código:
+                                 GUÍA DE LABORATORIO ­  Versión: 01
+
+                                        GUIA TRABAJO
+                                       INDEPENDIENTE
+
+PROGRAMA ACADÉMICO: Ingeniería informática
+
+Módulo: Sistemas operativos
+
+Área: Ingeniería Informática     Docente: Jhon Jairo Arango Tobón
+
+Fecha de entrega                 22 de mayo 2026
+
+Sustentación                     23 de mayo 2026
+
+1. Algoritmos de programación de la CPU Laboratorio N° 4,
+2. Objetivo de Aprendizaje
+
+3. Guía de desarrollo
+    Implementar un programa en un lenguaje de programación(C, C++, C#, Java,
+    otro), que realice la simulación del algoritmo Round Robin.
+    La Aplicación debe solicitar total de procesos.
+    Tiempo de llegada de cada proceso.
+    Cuantas entradas/salidas va a realizar cada proceso.
+    Cuantos quantum requiere cada proceso.
+    Se debe mostrar la cola de los procesos en el estado listo y el diagrama de Gantt.
+    Debe calcular los tiempos de vuelta, espera y sus promedios.
+    Nota Se debe solicitar el tamaño del Quantum y el tamaño del intercambio.
+    Tenga en cuenta que se debe validar
+
+4. Entregables
+
+Se debe entregar el programa fuente y el ejecutable el cual se debe subir a la
+plataforma del polivirtual, además un informe con la explicación del laboratorio como lo
+desarrollo, además de los inconvenientes encontrados, forma como lo solucionó y que
+aprendió.
+
+Observaciones:
+Realizar en grupos de trabajo
+El laboratorio debe sustentarse
+
+Área de Programas Informáticos                                       Page 1
+

@@ -1,0 +1,905 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 2834 >>
+stream
+BT /F2 18 Tf 54 730 Td (Explicacion detallada del backend Round Robin) Tj ET
+BT /F1 10 Tf 54 692 Td (Este documento explica el archivo rr_backend.py. La idea es entender que hace cada clase,) Tj ET
+BT /F1 10 Tf 54 678 Td (cada funcion, cada variable importante y como se conectan entre si para simular el algoritmo) Tj ET
+BT /F1 10 Tf 54 664 Td (Round Robin.) Tj ET
+BT /F2 14 Tf 54 634 Td (1. Que es el backend) Tj ET
+BT /F1 10 Tf 54 605 Td (El backend es la parte del programa que contiene la logica. En este proyecto, el backend no) Tj ET
+BT /F1 10 Tf 54 591 Td (muestra ventanas, botones, tablas ni colores. Eso lo hace el frontend en rr_frontend.py.) Tj ET
+BT /F1 10 Tf 54 571 Td (El backend se encarga de:) Tj ET
+BT /F1 10 Tf 66 551 Td (- Representar los procesos.) Tj ET
+BT /F1 10 Tf 66 537 Td (- Representar los bloques del diagrama de Gantt.) Tj ET
+BT /F1 10 Tf 66 523 Td (- Representar los estados de la cola de listos.) Tj ET
+BT /F1 10 Tf 66 509 Td (- Simular Round Robin.) Tj ET
+BT /F1 10 Tf 66 495 Td (- Manejar entradas y salidas.) Tj ET
+BT /F1 10 Tf 66 481 Td (- Manejar el intercambio o cambio de contexto.) Tj ET
+BT /F1 10 Tf 66 467 Td (- Calcular los tiempos finales.) Tj ET
+BT /F1 10 Tf 54 447 Td (En otras palabras: el frontend pregunta "que paso?", y el backend responde con los) Tj ET
+BT /F1 10 Tf 54 433 Td (resultados.) Tj ET
+BT /F2 14 Tf 54 403 Td (2. Imports del archivo) Tj ET
+BT /F1 10 Tf 54 374 Td (Al inicio aparece:) Tj ET
+BT /F3 8 Tf 66 350 Td (from __future__ import annotations) Tj ET
+BT /F1 10 Tf 54 329 Td (Esto permite usar anotaciones de tipos de forma mas flexible. Por ejemplo, permite escribir) Tj ET
+BT /F1 10 Tf 54 315 Td (tipos como List[Process] sin algunos problemas que pueden aparecer cuando una clase todavia) Tj ET
+BT /F1 10 Tf 54 301 Td (se esta definiendo.) Tj ET
+BT /F1 10 Tf 54 281 Td (Luego aparece:) Tj ET
+BT /F3 8 Tf 66 257 Td (from collections import deque) Tj ET
+BT /F1 10 Tf 54 236 Td (deque significa double-ended queue. Es una cola eficiente. En Round Robin necesitamos una) Tj ET
+BT /F1 10 Tf 54 222 Td (cola de listos: el primer proceso que entra es el primero que sale.) Tj ET
+BT /F1 10 Tf 54 202 Td (Por eso se usa deque en vez de una lista normal. Con deque, sacar el primer elemento con) Tj ET
+BT /F1 10 Tf 54 188 Td (popleft\(\) es rapido.) Tj ET
+BT /F1 10 Tf 54 168 Td (Luego aparece:) Tj ET
+BT /F3 8 Tf 66 144 Td (from dataclasses import dataclass, field) Tj ET
+BT /F1 10 Tf 54 123 Td (dataclass sirve para crear clases que guardan datos sin escribir mucho codigo repetitivo.) Tj ET
+BT /F1 10 Tf 54 109 Td (Python genera automaticamente el constructor __init__, la representacion y otras funciones) Tj ET
+BT /F1 10 Tf 54 95 Td (utiles.) Tj ET
+BT /F1 10 Tf 54 75 Td (field se usa para indicar valores especiales por defecto. En este archivo se usa para crear) Tj ET
+endstream
+endobj
+5 0 obj
+<< /Length 1990 >>
+stream
+BT /F1 10 Tf 54 738 Td (listas vacias correctamente.) Tj ET
+BT /F1 10 Tf 54 718 Td (Finalmente:) Tj ET
+BT /F3 8 Tf 66 694 Td (from typing import Deque, List, Optional) Tj ET
+BT /F1 10 Tf 54 673 Td (Esto ayuda a documentar los tipos de datos:) Tj ET
+BT /F1 10 Tf 66 653 Td (- List[int]: lista de enteros.) Tj ET
+BT /F1 10 Tf 66 639 Td (- Deque[Process]: cola de procesos.) Tj ET
+BT /F1 10 Tf 66 625 Td (- Optional[int]: puede ser un entero o puede ser None.) Tj ET
+BT /F1 10 Tf 54 605 Td (Estas anotaciones no son obligatorias para que Python funcione, pero hacen el codigo mas) Tj ET
+BT /F1 10 Tf 54 591 Td (claro.) Tj ET
+BT /F2 14 Tf 54 561 Td (3. Clase Process) Tj ET
+BT /F1 10 Tf 54 532 Td (La clase Process representa un proceso del sistema operativo.) Tj ET
+BT /F3 8 Tf 66 508 Td (@dataclass) Tj ET
+BT /F3 8 Tf 66 497 Td (class Process:) Tj ET
+BT /F1 10 Tf 54 476 Td (El decorador @dataclass le dice a Python que esta clase principalmente guarda datos.) Tj ET
+BT /F2 12 Tf 54 448 Td (3.1 Atributo pid) Tj ET
+BT /F3 8 Tf 66 418 Td (pid: str) Tj ET
+BT /F1 10 Tf 54 397 Td (pid es el identificador del proceso. Por ejemplo:) Tj ET
+BT /F3 8 Tf 66 373 Td (P0) Tj ET
+BT /F3 8 Tf 66 362 Td (P1) Tj ET
+BT /F3 8 Tf 66 351 Td (P2) Tj ET
+BT /F1 10 Tf 54 330 Td (Es de tipo str, o sea texto.) Tj ET
+BT /F2 12 Tf 54 302 Td (3.2 Atributo arrival_time) Tj ET
+BT /F3 8 Tf 66 272 Td (arrival_time: int) Tj ET
+BT /F1 10 Tf 54 251 Td (Es el tiempo de llegada del proceso al sistema. Si P1 llega en 70 ms, entonces:) Tj ET
+BT /F3 8 Tf 66 227 Td (arrival_time = 70) Tj ET
+BT /F1 10 Tf 54 206 Td (El proceso no puede entrar a la cola de listos antes de ese tiempo.) Tj ET
+BT /F2 12 Tf 54 178 Td (3.3 Atributo cpu_bursts) Tj ET
+BT /F3 8 Tf 66 148 Td (cpu_bursts: List[int]) Tj ET
+BT /F1 10 Tf 54 127 Td (Es una lista con las rafagas de CPU del proceso.) Tj ET
+BT /F1 10 Tf 54 107 Td (Por ejemplo, si en la tabla se tiene:) Tj ET
+BT /F3 8 Tf 66 83 Td (CPU 1 = 2Q) Tj ET
+BT /F3 8 Tf 66 72 Td (CPU 2 = 1Q) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Length 2005 >>
+stream
+BT /F3 8 Tf 66 738 Td (CPU 3 = 2Q) Tj ET
+BT /F1 10 Tf 54 717 Td (y el quantum es 100 ms, el frontend convierte eso a:) Tj ET
+BT /F3 8 Tf 66 693 Td (cpu_bursts = [200, 100, 200]) Tj ET
+BT /F1 10 Tf 54 672 Td (El backend trabaja con milisegundos, no con Q directamente.) Tj ET
+BT /F2 12 Tf 54 644 Td (3.4 Atributo io_bursts) Tj ET
+BT /F3 8 Tf 66 614 Td (io_bursts: List[int]) Tj ET
+BT /F1 10 Tf 54 593 Td (Es una lista con las entradas/salidas del proceso.) Tj ET
+BT /F1 10 Tf 54 573 Td (Por ejemplo:) Tj ET
+BT /F3 8 Tf 66 549 Td (E/S 1 = 2Q) Tj ET
+BT /F3 8 Tf 66 538 Td (E/S 2 = 2Q) Tj ET
+BT /F1 10 Tf 54 517 Td (con quantum de 100 ms, se convierte a:) Tj ET
+BT /F3 8 Tf 66 493 Td (io_bursts = [200, 200]) Tj ET
+BT /F1 10 Tf 54 472 Td (La relacion normal es:) Tj ET
+BT /F3 8 Tf 66 448 Td (CPU 1 -> E/S 1 -> CPU 2 -> E/S 2 -> CPU 3) Tj ET
+BT /F1 10 Tf 54 427 Td (Por eso normalmente hay una E/S menos que la cantidad de rafagas de CPU.) Tj ET
+BT /F2 12 Tf 54 399 Td (3.5 Atributo current_cpu_index) Tj ET
+BT /F3 8 Tf 66 369 Td (current_cpu_index: int = 0) Tj ET
+BT /F1 10 Tf 54 348 Td (Indica en cual rafaga de CPU va el proceso.) Tj ET
+BT /F1 10 Tf 54 328 Td (Si vale 0, el proceso esta en CPU 1.) Tj ET
+BT /F1 10 Tf 54 308 Td (Si vale 1, esta en CPU 2.) Tj ET
+BT /F1 10 Tf 54 288 Td (Si vale 2, esta en CPU 3.) Tj ET
+BT /F1 10 Tf 54 268 Td (Se inicia en 0 porque en Python las listas comienzan desde cero.) Tj ET
+BT /F2 12 Tf 54 240 Td (3.6 Atributo current_cpu_remaining) Tj ET
+BT /F3 8 Tf 66 210 Td (current_cpu_remaining: int = 0) Tj ET
+BT /F1 10 Tf 54 189 Td (Indica cuanto le falta al proceso de la rafaga actual de CPU.) Tj ET
+BT /F1 10 Tf 54 169 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 145 Td (cpu_bursts = [200, 100, 200]) Tj ET
+BT /F1 10 Tf 54 124 Td (Al inicio, current_cpu_remaining debe valer 200, porque esa es la primera rafaga pendiente.) Tj ET
+BT /F1 10 Tf 54 104 Td (Si el proceso ejecuta un quantum de 100 ms, entonces quedaria:) Tj ET
+BT /F3 8 Tf 66 80 Td (current_cpu_remaining = 100) Tj ET
+endstream
+endobj
+7 0 obj
+<< /Length 2120 >>
+stream
+BT /F2 12 Tf 54 730 Td (3.7 Atributo completion_time) Tj ET
+BT /F3 8 Tf 66 700 Td (completion_time: Optional[int] = None) Tj ET
+BT /F1 10 Tf 54 679 Td (Guarda el tiempo en que el proceso termina completamente.) Tj ET
+BT /F1 10 Tf 54 659 Td (Al principio vale None, porque el proceso todavia no ha terminado.) Tj ET
+BT /F1 10 Tf 54 639 Td (Cuando termina, por ejemplo en 1530 ms, queda:) Tj ET
+BT /F3 8 Tf 66 615 Td (completion_time = 1530) Tj ET
+BT /F2 12 Tf 54 586 Td (3.8 Atributo first_start_time) Tj ET
+BT /F3 8 Tf 66 556 Td (first_start_time: Optional[int] = None) Tj ET
+BT /F1 10 Tf 54 535 Td (Guarda el primer momento en el que el proceso entra a CPU.) Tj ET
+BT /F1 10 Tf 54 515 Td (Esto se usa para calcular la espera inicial:) Tj ET
+BT /F3 8 Tf 66 491 Td (tiempo de espera = primera entrada a CPU - tiempo de llegada) Tj ET
+BT /F1 10 Tf 54 470 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 446 Td (P1 llega en 70 ms) Tj ET
+BT /F3 8 Tf 66 435 Td (P1 entra por primera vez a CPU en 110 ms) Tj ET
+BT /F3 8 Tf 66 424 Td (espera = 110 - 70 = 40 ms) Tj ET
+BT /F2 14 Tf 54 393 Td (4. Metodo __post_init__) Tj ET
+BT /F3 8 Tf 66 360 Td (def __post_init__\(self\) -> None:) Tj ET
+BT /F3 8 Tf 66 349 Td (    self.current_cpu_remaining = self.cpu_bursts[0]) Tj ET
+BT /F1 10 Tf 54 328 Td (Este metodo se ejecuta automaticamente despues de crear un Process.) Tj ET
+BT /F1 10 Tf 54 308 Td (Sirve para inicializar la rafaga actual pendiente.) Tj ET
+BT /F1 10 Tf 54 288 Td (Si se crea:) Tj ET
+BT /F3 8 Tf 66 264 Td (Process\("P0", 0, [200, 100, 200], [200, 200]\)) Tj ET
+BT /F1 10 Tf 54 243 Td (entonces __post_init__ coloca:) Tj ET
+BT /F3 8 Tf 66 219 Td (current_cpu_remaining = 200) Tj ET
+BT /F1 10 Tf 54 198 Td (porque cpu_bursts[0] es la primera rafaga de CPU.) Tj ET
+BT /F2 14 Tf 54 168 Td (5. Propiedad total_cpu_time) Tj ET
+BT /F3 8 Tf 66 135 Td (@property) Tj ET
+BT /F3 8 Tf 66 124 Td (def total_cpu_time\(self\) -> int:) Tj ET
+BT /F3 8 Tf 66 113 Td (    return sum\(self.cpu_bursts\)) Tj ET
+BT /F1 10 Tf 54 92 Td (@property permite usar el metodo como si fuera un atributo.) Tj ET
+BT /F1 10 Tf 54 72 Td (En vez de escribir:) Tj ET
+endstream
+endobj
+8 0 obj
+<< /Length 1979 >>
+stream
+BT /F3 8 Tf 66 728 Td (process.total_cpu_time\(\)) Tj ET
+BT /F1 10 Tf 54 707 Td (se escribe:) Tj ET
+BT /F3 8 Tf 66 683 Td (process.total_cpu_time) Tj ET
+BT /F1 10 Tf 54 662 Td (Esta propiedad suma todas las rafagas de CPU.) Tj ET
+BT /F1 10 Tf 54 642 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 618 Td (cpu_bursts = [200, 100, 200]) Tj ET
+BT /F1 10 Tf 54 597 Td (Entonces:) Tj ET
+BT /F3 8 Tf 66 573 Td (total_cpu_time = 500) Tj ET
+BT /F2 14 Tf 54 542 Td (6. Propiedad total_io_time) Tj ET
+BT /F3 8 Tf 66 509 Td (@property) Tj ET
+BT /F3 8 Tf 66 498 Td (def total_io_time\(self\) -> int:) Tj ET
+BT /F3 8 Tf 66 487 Td (    return sum\(self.io_bursts\)) Tj ET
+BT /F1 10 Tf 54 466 Td (Suma todas las entradas/salidas del proceso.) Tj ET
+BT /F1 10 Tf 54 446 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 422 Td (io_bursts = [200, 200]) Tj ET
+BT /F1 10 Tf 54 401 Td (Entonces:) Tj ET
+BT /F3 8 Tf 66 377 Td (total_io_time = 400) Tj ET
+BT /F1 10 Tf 54 356 Td (Este valor se usa en la formula de clase:) Tj ET
+BT /F3 8 Tf 66 332 Td (tiempo de vuelta = finalizacion - llegada - E/S total) Tj ET
+BT /F2 14 Tf 54 301 Td (7. Propiedad finished) Tj ET
+BT /F3 8 Tf 66 268 Td (@property) Tj ET
+BT /F3 8 Tf 66 257 Td (def finished\(self\) -> bool:) Tj ET
+BT /F3 8 Tf 66 246 Td (    return self.current_cpu_index >= len\(self.cpu_bursts\)) Tj ET
+BT /F1 10 Tf 54 225 Td (Esta propiedad indica si el proceso ya termino todas sus rafagas de CPU.) Tj ET
+BT /F1 10 Tf 54 205 Td (Si current_cpu_index es mayor o igual que la cantidad de rafagas, ya no queda CPU pendiente.) Tj ET
+BT /F1 10 Tf 54 185 Td (Por ejemplo:) Tj ET
+BT /F3 8 Tf 66 161 Td (cpu_bursts = [200, 100, 200]) Tj ET
+BT /F1 10 Tf 54 140 Td (Tiene 3 rafagas. Sus indices son:) Tj ET
+BT /F3 8 Tf 66 116 Td (0, 1, 2) Tj ET
+BT /F1 10 Tf 54 95 Td (Cuando current_cpu_index llega a 3, ya no existe otra rafaga. Por eso el proceso termino.) Tj ET
+BT /F1 10 Tf 54 75 Td (Actualmente esta propiedad no es indispensable en la simulacion, pero ayuda a expresar la) Tj ET
+endstream
+endobj
+9 0 obj
+<< /Length 2028 >>
+stream
+BT /F1 10 Tf 54 738 Td (idea de "proceso terminado".) Tj ET
+BT /F2 14 Tf 54 708 Td (8. Clase GanttEntry) Tj ET
+BT /F3 8 Tf 66 675 Td (@dataclass) Tj ET
+BT /F3 8 Tf 66 664 Td (class GanttEntry:) Tj ET
+BT /F3 8 Tf 66 653 Td (    label: str) Tj ET
+BT /F3 8 Tf 66 642 Td (    start: int) Tj ET
+BT /F3 8 Tf 66 631 Td (    end: int) Tj ET
+BT /F1 10 Tf 54 610 Td (Representa un bloque del diagrama de Gantt.) Tj ET
+BT /F1 10 Tf 54 590 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 566 Td (GanttEntry\(label="P0", start=0, end=100\)) Tj ET
+BT /F1 10 Tf 54 545 Td (Significa:) Tj ET
+BT /F3 8 Tf 66 521 Td (Desde 0 ms hasta 100 ms se ejecuto P0.) Tj ET
+BT /F1 10 Tf 54 500 Td (Tambien puede representar:) Tj ET
+BT /F3 8 Tf 66 476 Td (GanttEntry\(label="CS", start=100, end=110\)) Tj ET
+BT /F1 10 Tf 54 455 Td (Eso significa cambio de contexto o intercambio.) Tj ET
+BT /F1 10 Tf 54 435 Td (Tambien puede representar:) Tj ET
+BT /F3 8 Tf 66 411 Td (GanttEntry\(label="IDLE", start=500, end=600\)) Tj ET
+BT /F1 10 Tf 54 390 Td (Eso significa que la CPU estuvo inactiva.) Tj ET
+BT /F2 14 Tf 54 360 Td (9. Clase QueueSnapshot) Tj ET
+BT /F3 8 Tf 66 327 Td (@dataclass) Tj ET
+BT /F3 8 Tf 66 316 Td (class QueueSnapshot:) Tj ET
+BT /F3 8 Tf 66 305 Td (    time: int) Tj ET
+BT /F3 8 Tf 66 294 Td (    reason: str) Tj ET
+BT /F3 8 Tf 66 283 Td (    queue: List[str] = field\(default_factory=list\)) Tj ET
+BT /F1 10 Tf 54 262 Td (Representa una fotografia de la cola de listos en un momento.) Tj ET
+BT /F1 10 Tf 54 242 Td (Guarda:) Tj ET
+BT /F1 10 Tf 66 222 Td (- time: en que tiempo se tomo la fotografia.) Tj ET
+BT /F1 10 Tf 66 208 Td (- reason: por que ocurrio el cambio.) Tj ET
+BT /F1 10 Tf 66 194 Td (- queue: que procesos estaban listos.) Tj ET
+BT /F1 10 Tf 54 174 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 150 Td (QueueSnapshot\() Tj ET
+BT /F3 8 Tf 66 139 Td (    time=110,) Tj ET
+BT /F3 8 Tf 66 128 Td (    reason="Se ejecuta P1",) Tj ET
+BT /F3 8 Tf 66 117 Td (    queue=["P0"]) Tj ET
+BT /F3 8 Tf 66 106 Td (\)) Tj ET
+BT /F1 10 Tf 54 85 Td (Eso significa:) Tj ET
+endstream
+endobj
+10 0 obj
+<< /Length 2404 >>
+stream
+BT /F3 8 Tf 66 738 Td (En 110 ms se ejecuta P1 y en cola queda P0.) Tj ET
+BT /F1 10 Tf 54 717 Td (field\(default_factory=list\) crea una lista vacia nueva para cada objeto. Esto es importante) Tj ET
+BT /F1 10 Tf 54 703 Td (porque evita que varios objetos compartan la misma lista por accidente.) Tj ET
+BT /F2 14 Tf 54 673 Td (10. Funcion add_gantt_entry) Tj ET
+BT /F3 8 Tf 66 640 Td (def add_gantt_entry\(gantt: List[GanttEntry], label: str, start: int, end: int\) ->) Tj ET
+BT /F3 8 Tf 66 629 Td (None:) Tj ET
+BT /F1 10 Tf 54 608 Td (Esta funcion agrega un bloque al diagrama de Gantt.) Tj ET
+BT /F1 10 Tf 54 588 Td (Recibe:) Tj ET
+BT /F1 10 Tf 66 568 Td (- gantt: la lista donde se guardan los bloques.) Tj ET
+BT /F1 10 Tf 66 554 Td (- label: nombre del bloque, por ejemplo P0, CS o IDLE.) Tj ET
+BT /F1 10 Tf 66 540 Td (- start: tiempo inicial.) Tj ET
+BT /F1 10 Tf 66 526 Td (- end: tiempo final.) Tj ET
+BT /F1 10 Tf 54 506 Td (Primero revisa:) Tj ET
+BT /F3 8 Tf 66 482 Td (if start == end:) Tj ET
+BT /F3 8 Tf 66 471 Td (    return) Tj ET
+BT /F1 10 Tf 54 450 Td (Si el inicio y el fin son iguales, el bloque dura cero. No tiene sentido dibujarlo.) Tj ET
+BT /F1 10 Tf 54 430 Td (Luego revisa:) Tj ET
+BT /F3 8 Tf 66 406 Td (if gantt and gantt[-1].label == label and gantt[-1].end == start:) Tj ET
+BT /F1 10 Tf 54 385 Td (Esto pregunta:) Tj ET
+BT /F1 10 Tf 66 365 Td (- Ya hay bloques en el Gantt?) Tj ET
+BT /F1 10 Tf 66 351 Td (- El ultimo bloque tiene la misma etiqueta?) Tj ET
+BT /F1 10 Tf 66 337 Td (- El ultimo bloque termina justo donde empieza este nuevo?) Tj ET
+BT /F1 10 Tf 54 317 Td (Si todo eso es cierto, no crea otro bloque. Solo alarga el anterior:) Tj ET
+BT /F3 8 Tf 66 293 Td (gantt[-1].end = end) Tj ET
+BT /F1 10 Tf 54 272 Td (Esto evita bloques repetidos innecesarios.) Tj ET
+BT /F1 10 Tf 54 252 Td (Si no se puede unir, agrega uno nuevo:) Tj ET
+BT /F3 8 Tf 66 228 Td (gantt.append\(GanttEntry\(label=label, start=start, end=end\)\)) Tj ET
+BT /F2 14 Tf 54 197 Td (11. Funcion queue_labels) Tj ET
+BT /F3 8 Tf 66 164 Td (def queue_labels\(queue: Deque[Process]\) -> List[str]:) Tj ET
+BT /F3 8 Tf 66 153 Td (    return [process.pid for process in queue]) Tj ET
+BT /F1 10 Tf 54 132 Td (La cola real guarda objetos Process.) Tj ET
+BT /F1 10 Tf 54 112 Td (Pero para mostrarla en pantalla no necesitamos todo el objeto. Solo necesitamos el nombre:) Tj ET
+BT /F3 8 Tf 66 88 Td (P0, P1, P2) Tj ET
+endstream
+endobj
+11 0 obj
+<< /Length 2317 >>
+stream
+BT /F1 10 Tf 54 738 Td (Esta funcion convierte:) Tj ET
+BT /F3 8 Tf 66 714 Td (deque\([Process\("P0"\), Process\("P1"\)]\)) Tj ET
+BT /F1 10 Tf 54 693 Td (en:) Tj ET
+BT /F3 8 Tf 66 669 Td (["P0", "P1"]) Tj ET
+BT /F1 10 Tf 54 648 Td (La parte:) Tj ET
+BT /F3 8 Tf 66 624 Td ([process.pid for process in queue]) Tj ET
+BT /F1 10 Tf 54 603 Td (se llama list comprehension. Es una forma compacta de crear una lista.) Tj ET
+BT /F2 14 Tf 54 573 Td (12. Funcion enqueue_new_arrivals) Tj ET
+BT /F3 8 Tf 66 540 Td (def enqueue_new_arrivals\() Tj ET
+BT /F3 8 Tf 66 529 Td (    processes: List[Process],) Tj ET
+BT /F3 8 Tf 66 518 Td (    next_arrival_index: int,) Tj ET
+BT /F3 8 Tf 66 507 Td (    current_time: int,) Tj ET
+BT /F3 8 Tf 66 496 Td (    ready_queue: Deque[Process],) Tj ET
+BT /F3 8 Tf 66 485 Td (\) -> int:) Tj ET
+BT /F1 10 Tf 54 464 Td (Esta funcion mete a la cola de listos los procesos que ya llegaron.) Tj ET
+BT /F1 10 Tf 54 444 Td (Parametros:) Tj ET
+BT /F1 10 Tf 66 424 Td (- processes: lista de procesos ordenados por llegada.) Tj ET
+BT /F1 10 Tf 66 410 Td (- next_arrival_index: indice del siguiente proceso que todavia no ha entrado.) Tj ET
+BT /F1 10 Tf 66 396 Td (- current_time: tiempo actual de la simulacion.) Tj ET
+BT /F1 10 Tf 66 382 Td (- ready_queue: cola de listos.) Tj ET
+BT /F1 10 Tf 54 362 Td (La funcion usa:) Tj ET
+BT /F3 8 Tf 66 338 Td (while next_arrival_index < len\(processes\) and) Tj ET
+BT /F3 8 Tf 66 327 Td (processes[next_arrival_index].arrival_time <= current_time:) Tj ET
+BT /F1 10 Tf 54 306 Td (Esto significa:) Tj ET
+BT /F1 10 Tf 54 286 Td (Mientras exista un proceso pendiente de llegada y su tiempo de llegada sea menor o igual al) Tj ET
+BT /F1 10 Tf 54 272 Td (tiempo actual, entra a la cola.) Tj ET
+BT /F1 10 Tf 54 252 Td (Luego:) Tj ET
+BT /F3 8 Tf 66 228 Td (ready_queue.append\(processes[next_arrival_index]\)) Tj ET
+BT /F1 10 Tf 54 207 Td (mete ese proceso al final de la cola.) Tj ET
+BT /F1 10 Tf 54 187 Td (Despues:) Tj ET
+BT /F3 8 Tf 66 163 Td (next_arrival_index += 1) Tj ET
+BT /F1 10 Tf 54 142 Td (avanza al siguiente proceso pendiente.) Tj ET
+BT /F1 10 Tf 54 122 Td (Finalmente retorna:) Tj ET
+BT /F3 8 Tf 66 98 Td (return next_arrival_index) Tj ET
+BT /F1 10 Tf 54 77 Td (Es necesario devolverlo porque la simulacion necesita recordar cual es el siguiente proceso) Tj ET
+endstream
+endobj
+12 0 obj
+<< /Length 2383 >>
+stream
+BT /F1 10 Tf 54 738 Td (que aun no ha llegado.) Tj ET
+BT /F2 14 Tf 54 708 Td (13. Funcion move_unblocked_processes) Tj ET
+BT /F3 8 Tf 66 675 Td (def move_unblocked_processes\() Tj ET
+BT /F3 8 Tf 66 664 Td (    blocked: List[tuple[int, int, Process]],) Tj ET
+BT /F3 8 Tf 66 653 Td (    current_time: int,) Tj ET
+BT /F3 8 Tf 66 642 Td (    ready_queue: Deque[Process],) Tj ET
+BT /F3 8 Tf 66 631 Td (\) -> None:) Tj ET
+BT /F1 10 Tf 54 610 Td (Esta funcion mueve procesos desde la lista de bloqueados hacia la cola de listos.) Tj ET
+BT /F1 10 Tf 54 590 Td (Un proceso bloqueado es un proceso que esta haciendo E/S.) Tj ET
+BT /F1 10 Tf 54 570 Td (La lista blocked guarda tuplas de esta forma:) Tj ET
+BT /F3 8 Tf 66 546 Td (\(tiempo_de_desbloqueo, orden, proceso\)) Tj ET
+BT /F1 10 Tf 54 525 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 501 Td (\(520, 3, P0\)) Tj ET
+BT /F1 10 Tf 54 480 Td (significa:) Tj ET
+BT /F3 8 Tf 66 456 Td (P0 termina su E/S en 520 ms.) Tj ET
+BT /F1 10 Tf 54 435 Td (La funcion primero busca los procesos cuya E/S ya termino:) Tj ET
+BT /F3 8 Tf 66 411 Td (unblocked = [item for item in blocked if item[0] <= current_time]) Tj ET
+BT /F1 10 Tf 54 390 Td (Luego deja en blocked solo los que todavia siguen bloqueados:) Tj ET
+BT /F3 8 Tf 66 366 Td (blocked[:] = [item for item in blocked if item[0] > current_time]) Tj ET
+BT /F1 10 Tf 54 345 Td (El uso de blocked[:] = ... modifica la misma lista existente, no crea una lista aparte) Tj ET
+BT /F1 10 Tf 54 331 Td (desconectada.) Tj ET
+BT /F1 10 Tf 54 311 Td (Despues ordena los desbloqueados:) Tj ET
+BT /F3 8 Tf 66 287 Td (for _, _, process in sorted\(unblocked, key=lambda item: \(item[0], item[1]\)\):) Tj ET
+BT /F1 10 Tf 54 266 Td (Se ordena por:) Tj ET
+BT /F1 10 Tf 66 246 Td (- tiempo de desbloqueo.) Tj ET
+BT /F1 10 Tf 66 232 Td (- orden de insercion.) Tj ET
+BT /F1 10 Tf 54 212 Td (Eso evita resultados raros cuando dos procesos terminan E/S al mismo tiempo.) Tj ET
+BT /F1 10 Tf 54 192 Td (Finalmente mete cada proceso desbloqueado a la cola de listos:) Tj ET
+BT /F3 8 Tf 66 168 Td (ready_queue.append\(process\)) Tj ET
+BT /F2 14 Tf 54 137 Td (14. Funcion next_event_time) Tj ET
+BT /F3 8 Tf 66 104 Td (def next_event_time\() Tj ET
+BT /F3 8 Tf 66 93 Td (    processes: List[Process],) Tj ET
+BT /F3 8 Tf 66 82 Td (    next_arrival_index: int,) Tj ET
+BT /F3 8 Tf 66 71 Td (    blocked: List[tuple[int, int, Process]],) Tj ET
+endstream
+endobj
+13 0 obj
+<< /Length 2423 >>
+stream
+BT /F3 8 Tf 66 738 Td (\) -> Optional[int]:) Tj ET
+BT /F1 10 Tf 54 717 Td (Esta funcion se usa cuando la CPU no tiene nada para ejecutar.) Tj ET
+BT /F1 10 Tf 54 697 Td (Si la cola de listos esta vacia, hay que saber cuando ocurre el proximo evento.) Tj ET
+BT /F1 10 Tf 54 677 Td (Los eventos posibles son:) Tj ET
+BT /F1 10 Tf 66 657 Td (- llega un proceso nuevo.) Tj ET
+BT /F1 10 Tf 66 643 Td (- termina una E/S.) Tj ET
+BT /F1 10 Tf 54 623 Td (La lista candidates guarda posibles tiempos:) Tj ET
+BT /F3 8 Tf 66 599 Td (candidates: List[int] = []) Tj ET
+BT /F1 10 Tf 54 578 Td (Si todavia queda un proceso por llegar:) Tj ET
+BT /F3 8 Tf 66 554 Td (if next_arrival_index < len\(processes\):) Tj ET
+BT /F3 8 Tf 66 543 Td (    candidates.append\(processes[next_arrival_index].arrival_time\)) Tj ET
+BT /F1 10 Tf 54 522 Td (agrega su tiempo de llegada.) Tj ET
+BT /F1 10 Tf 54 502 Td (Si hay procesos bloqueados:) Tj ET
+BT /F3 8 Tf 66 478 Td (if blocked:) Tj ET
+BT /F3 8 Tf 66 467 Td (    candidates.append\(min\(item[0] for item in blocked\)\)) Tj ET
+BT /F1 10 Tf 54 446 Td (agrega el menor tiempo de desbloqueo.) Tj ET
+BT /F1 10 Tf 54 426 Td (Finalmente:) Tj ET
+BT /F3 8 Tf 66 402 Td (return min\(candidates\) if candidates else None) Tj ET
+BT /F1 10 Tf 54 381 Td (Si hay eventos candidatos, devuelve el mas cercano. Si no hay ninguno, devuelve None.) Tj ET
+BT /F2 14 Tf 54 351 Td (15. Funcion simulate_round_robin) Tj ET
+BT /F1 10 Tf 54 322 Td (Esta es la funcion principal del backend.) Tj ET
+BT /F3 8 Tf 66 298 Td (def simulate_round_robin\() Tj ET
+BT /F3 8 Tf 66 287 Td (    processes: List[Process],) Tj ET
+BT /F3 8 Tf 66 276 Td (    quantum_size: int,) Tj ET
+BT /F3 8 Tf 66 265 Td (    context_switch_size: int,) Tj ET
+BT /F3 8 Tf 66 254 Td (\) -> tuple[List[GanttEntry], List[QueueSnapshot]]:) Tj ET
+BT /F1 10 Tf 54 233 Td (Recibe:) Tj ET
+BT /F1 10 Tf 66 213 Td (- processes: procesos a simular.) Tj ET
+BT /F1 10 Tf 66 199 Td (- quantum_size: tamano del quantum en milisegundos.) Tj ET
+BT /F1 10 Tf 66 185 Td (- context_switch_size: tamano del intercambio en milisegundos.) Tj ET
+BT /F1 10 Tf 54 165 Td (Devuelve:) Tj ET
+BT /F1 10 Tf 66 145 Td (- lista de bloques para el Gantt.) Tj ET
+BT /F1 10 Tf 66 131 Td (- lista de estados de la cola de listos.) Tj ET
+BT /F2 12 Tf 54 103 Td (15.1 Ordenar procesos) Tj ET
+BT /F3 8 Tf 66 73 Td (processes = sorted\(processes, key=lambda item: \(item.arrival_time, item.pid\)\)) Tj ET
+endstream
+endobj
+14 0 obj
+<< /Length 2388 >>
+stream
+BT /F1 10 Tf 54 732 Td (Ordena los procesos por tiempo de llegada. Si dos llegan al mismo tiempo, ordena por nombre.) Tj ET
+BT /F1 10 Tf 54 712 Td (Esto ayuda a que la simulacion sea predecible.) Tj ET
+BT /F2 12 Tf 54 684 Td (15.2 Crear estructuras principales) Tj ET
+BT /F3 8 Tf 66 654 Td (ready_queue: Deque[Process] = deque\(\)) Tj ET
+BT /F3 8 Tf 66 643 Td (blocked: List[tuple[int, int, Process]] = []) Tj ET
+BT /F3 8 Tf 66 632 Td (gantt: List[GanttEntry] = []) Tj ET
+BT /F3 8 Tf 66 621 Td (snapshots: List[QueueSnapshot] = []) Tj ET
+BT /F1 10 Tf 54 600 Td (ready_queue es la cola de procesos listos.) Tj ET
+BT /F1 10 Tf 54 580 Td (blocked guarda procesos en E/S.) Tj ET
+BT /F1 10 Tf 54 560 Td (gantt guarda el diagrama de Gantt.) Tj ET
+BT /F1 10 Tf 54 540 Td (snapshots guarda la historia de la cola.) Tj ET
+BT /F2 12 Tf 54 512 Td (15.3 Variables de control) Tj ET
+BT /F3 8 Tf 66 482 Td (time = 0) Tj ET
+BT /F3 8 Tf 66 471 Td (next_arrival_index = 0) Tj ET
+BT /F3 8 Tf 66 460 Td (completed_processes = 0) Tj ET
+BT /F3 8 Tf 66 449 Td (block_sequence = 0) Tj ET
+BT /F1 10 Tf 54 428 Td (time es el reloj de la simulacion.) Tj ET
+BT /F1 10 Tf 54 408 Td (next_arrival_index indica cual es el siguiente proceso que falta por llegar.) Tj ET
+BT /F1 10 Tf 54 388 Td (completed_processes cuenta cuantos procesos han terminado.) Tj ET
+BT /F1 10 Tf 54 368 Td (block_sequence ayuda a ordenar procesos que terminan E/S al mismo tiempo.) Tj ET
+BT /F2 12 Tf 54 340 Td (15.4 Primer ingreso de procesos) Tj ET
+BT /F3 8 Tf 66 310 Td (next_arrival_index = enqueue_new_arrivals\(processes, next_arrival_index, time,) Tj ET
+BT /F3 8 Tf 66 299 Td (ready_queue\)) Tj ET
+BT /F1 10 Tf 54 278 Td (En el tiempo 0, mete a la cola los procesos que llegan en 0.) Tj ET
+BT /F1 10 Tf 54 258 Td (Luego guarda una foto inicial:) Tj ET
+BT /F3 8 Tf 66 234 Td (snapshots.append\(QueueSnapshot\(time=time, reason="Estado inicial",) Tj ET
+BT /F3 8 Tf 66 223 Td (queue=queue_labels\(ready_queue\)\)\)) Tj ET
+BT /F2 12 Tf 54 194 Td (15.5 Ciclo principal) Tj ET
+BT /F3 8 Tf 66 164 Td (while completed_processes < len\(processes\):) Tj ET
+BT /F1 10 Tf 54 143 Td (El ciclo se repite hasta que todos los procesos terminen.) Tj ET
+BT /F1 10 Tf 54 123 Td (Dentro de este ciclo ocurre toda la simulacion.) Tj ET
+BT /F2 12 Tf 54 95 Td (15.6 Revisar E/S y nuevas llegadas) Tj ET
+BT /F1 10 Tf 54 69 Td (Al inicio de cada vuelta:) Tj ET
+endstream
+endobj
+15 0 obj
+<< /Length 2180 >>
+stream
+BT /F3 8 Tf 66 728 Td (move_unblocked_processes\(blocked, time, ready_queue\)) Tj ET
+BT /F3 8 Tf 66 717 Td (next_arrival_index = enqueue_new_arrivals\(processes, next_arrival_index, time,) Tj ET
+BT /F3 8 Tf 66 706 Td (ready_queue\)) Tj ET
+BT /F1 10 Tf 54 685 Td (Primero se mueven procesos que terminaron E/S.) Tj ET
+BT /F1 10 Tf 54 665 Td (Luego se agregan procesos nuevos que ya llegaron.) Tj ET
+BT /F2 12 Tf 54 637 Td (15.7 CPU inactiva) Tj ET
+BT /F1 10 Tf 54 611 Td (Si no hay procesos listos:) Tj ET
+BT /F3 8 Tf 66 587 Td (if not ready_queue:) Tj ET
+BT /F1 10 Tf 54 566 Td (entonces la CPU no puede ejecutar nada.) Tj ET
+BT /F1 10 Tf 54 546 Td (Se busca el siguiente evento:) Tj ET
+BT /F3 8 Tf 66 522 Td (event_time = next_event_time\(processes, next_arrival_index, blocked\)) Tj ET
+BT /F1 10 Tf 54 501 Td (Si no hay evento:) Tj ET
+BT /F3 8 Tf 66 477 Td (if event_time is None:) Tj ET
+BT /F3 8 Tf 66 466 Td (    break) Tj ET
+BT /F1 10 Tf 54 445 Td (se termina la simulacion.) Tj ET
+BT /F1 10 Tf 54 425 Td (Si si hay evento, se agrega un bloque IDLE:) Tj ET
+BT /F3 8 Tf 66 401 Td (add_gantt_entry\(gantt, "IDLE", time, event_time\)) Tj ET
+BT /F1 10 Tf 54 380 Td (Luego el reloj salta hasta ese evento:) Tj ET
+BT /F3 8 Tf 66 356 Td (time = event_time) Tj ET
+BT /F1 10 Tf 54 335 Td (Y se registra en la cola:) Tj ET
+BT /F3 8 Tf 66 311 Td (snapshots.append\(QueueSnapshot\(time=time, reason="CPU inactiva",) Tj ET
+BT /F3 8 Tf 66 300 Td (queue=queue_labels\(ready_queue\)\)\)) Tj ET
+BT /F2 12 Tf 54 271 Td (15.8 Tomar el siguiente proceso) Tj ET
+BT /F1 10 Tf 54 245 Td (Si hay procesos listos:) Tj ET
+BT /F3 8 Tf 66 221 Td (current = ready_queue.popleft\(\)) Tj ET
+BT /F1 10 Tf 54 200 Td (Saca el primer proceso de la cola.) Tj ET
+BT /F1 10 Tf 54 180 Td (Esto es Round Robin: el proceso que mas tiempo lleva esperando en la cola se ejecuta) Tj ET
+BT /F1 10 Tf 54 166 Td (primero.) Tj ET
+BT /F2 12 Tf 54 138 Td (15.9 Registrar primera entrada a CPU) Tj ET
+BT /F3 8 Tf 66 108 Td (if current.first_start_time is None:) Tj ET
+BT /F3 8 Tf 66 97 Td (    current.first_start_time = time) Tj ET
+BT /F1 10 Tf 54 76 Td (Si el proceso nunca habia entrado a CPU, se guarda este tiempo.) Tj ET
+endstream
+endobj
+16 0 obj
+<< /Length 2036 >>
+stream
+BT /F1 10 Tf 54 738 Td (Esto se usa para calcular:) Tj ET
+BT /F3 8 Tf 66 714 Td (tiempo de espera = primera entrada a CPU - llegada) Tj ET
+BT /F2 12 Tf 54 685 Td (15.10 Guardar estado de cola) Tj ET
+BT /F3 8 Tf 66 655 Td (snapshots.append\(QueueSnapshot\(time=time, reason=f"Se ejecuta {current.pid}",) Tj ET
+BT /F3 8 Tf 66 644 Td (queue=queue_labels\(ready_queue\)\)\)) Tj ET
+BT /F1 10 Tf 54 623 Td (Se guarda que proceso entro a CPU y que quedo en la cola.) Tj ET
+BT /F2 12 Tf 54 595 Td (15.11 Calcular cuanto ejecuta) Tj ET
+BT /F3 8 Tf 66 565 Td (run_time = min\(quantum_size, current.current_cpu_remaining\)) Tj ET
+BT /F1 10 Tf 54 544 Td (El proceso ejecuta como maximo un quantum.) Tj ET
+BT /F1 10 Tf 54 524 Td (Si le falta menos que un quantum, ejecuta solo lo que le falta.) Tj ET
+BT /F1 10 Tf 54 504 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 480 Td (quantum = 100) Tj ET
+BT /F3 8 Tf 66 469 Td (faltante = 60) Tj ET
+BT /F3 8 Tf 66 458 Td (run_time = 60) Tj ET
+BT /F2 12 Tf 54 429 Td (15.12 Agregar bloque al Gantt) Tj ET
+BT /F3 8 Tf 66 399 Td (add_gantt_entry\(gantt, current.pid, time, time + run_time\)) Tj ET
+BT /F1 10 Tf 54 378 Td (Se registra que el proceso se ejecuto desde time hasta time + run_time.) Tj ET
+BT /F2 12 Tf 54 350 Td (15.13 Avanzar el reloj) Tj ET
+BT /F3 8 Tf 66 320 Td (time += run_time) Tj ET
+BT /F1 10 Tf 54 299 Td (Si antes era 110 y ejecuto 100, ahora el tiempo es 210.) Tj ET
+BT /F2 12 Tf 54 271 Td (15.14 Restar CPU pendiente) Tj ET
+BT /F3 8 Tf 66 241 Td (current.current_cpu_remaining -= run_time) Tj ET
+BT /F1 10 Tf 54 220 Td (Si al proceso le faltaban 300 ms y ejecuto 100 ms, ahora le faltan 200 ms.) Tj ET
+BT /F2 12 Tf 54 192 Td (15.15 Variable should_requeue) Tj ET
+BT /F3 8 Tf 66 162 Td (should_requeue = False) Tj ET
+BT /F1 10 Tf 54 141 Td (Esta variable indica si el proceso debe volver a la cola de listos despues de ejecutar.) Tj ET
+BT /F1 10 Tf 54 121 Td (Debe volver si:) Tj ET
+BT /F1 10 Tf 66 101 Td (- no termino su rafaga actual de CPU.) Tj ET
+BT /F1 10 Tf 54 81 Td (No debe volver si:) Tj ET
+endstream
+endobj
+17 0 obj
+<< /Length 2323 >>
+stream
+BT /F1 10 Tf 66 738 Td (- termino y pasa a E/S.) Tj ET
+BT /F1 10 Tf 66 724 Td (- termino todo el proceso.) Tj ET
+BT /F2 12 Tf 54 696 Td (15.16 Cuando termina una rafaga de CPU) Tj ET
+BT /F3 8 Tf 66 666 Td (if current.current_cpu_remaining == 0:) Tj ET
+BT /F1 10 Tf 54 645 Td (Si ya no le queda CPU en la rafaga actual, hay dos opciones:) Tj ET
+BT /F1 10 Tf 66 625 Td (- el proceso termino por completo.) Tj ET
+BT /F1 10 Tf 66 611 Td (- el proceso debe ir a E/S.) Tj ET
+BT /F1 10 Tf 54 591 Td (Primero:) Tj ET
+BT /F3 8 Tf 66 567 Td (io_index = current.current_cpu_index) Tj ET
+BT /F3 8 Tf 66 556 Td (current.current_cpu_index += 1) Tj ET
+BT /F1 10 Tf 54 535 Td (io_index indica cual E/S corresponde a la rafaga que acaba de terminar.) Tj ET
+BT /F1 10 Tf 54 515 Td (Luego se avanza a la siguiente rafaga de CPU.) Tj ET
+BT /F2 12 Tf 54 487 Td (15.17 Cuando el proceso finaliza) Tj ET
+BT /F3 8 Tf 66 457 Td (if current.current_cpu_index >= len\(current.cpu_bursts\):) Tj ET
+BT /F1 10 Tf 54 436 Td (Si el indice de CPU ya paso el final de la lista, no quedan mas rafagas.) Tj ET
+BT /F1 10 Tf 54 416 Td (Entonces:) Tj ET
+BT /F3 8 Tf 66 392 Td (current.completion_time = time) Tj ET
+BT /F3 8 Tf 66 381 Td (completed_processes += 1) Tj ET
+BT /F3 8 Tf 66 370 Td (reason = f"{current.pid} finaliza") Tj ET
+BT /F1 10 Tf 54 349 Td (Se guarda el tiempo de finalizacion y se aumenta el contador de procesos completados.) Tj ET
+BT /F2 12 Tf 54 321 Td (15.18 Cuando el proceso va a E/S) Tj ET
+BT /F1 10 Tf 54 295 Td (Si todavia quedan rafagas de CPU:) Tj ET
+BT /F3 8 Tf 66 271 Td (io_duration = current.io_bursts[io_index]) Tj ET
+BT /F3 8 Tf 66 260 Td (current.current_cpu_remaining = current.cpu_bursts[current.current_cpu_index]) Tj ET
+BT /F3 8 Tf 66 249 Td (blocked.append\(\(time + io_duration, block_sequence, current\)\)) Tj ET
+BT /F3 8 Tf 66 238 Td (block_sequence += 1) Tj ET
+BT /F3 8 Tf 66 227 Td (reason = f"{current.pid} realiza E/S") Tj ET
+BT /F1 10 Tf 54 206 Td (Se obtiene cuanto dura la E/S.) Tj ET
+BT /F1 10 Tf 54 186 Td (Se prepara la siguiente rafaga de CPU.) Tj ET
+BT /F1 10 Tf 54 166 Td (Se mete el proceso en la lista de bloqueados.) Tj ET
+BT /F1 10 Tf 54 146 Td (El tiempo de desbloqueo es:) Tj ET
+BT /F3 8 Tf 66 122 Td (time + io_duration) Tj ET
+BT /F2 12 Tf 54 93 Td (15.19 Cuando no termina la rafaga de CPU) Tj ET
+endstream
+endobj
+18 0 obj
+<< /Length 2794 >>
+stream
+BT /F3 8 Tf 66 738 Td (else:) Tj ET
+BT /F3 8 Tf 66 727 Td (    reason = f"{current.pid} vuelve a listos") Tj ET
+BT /F3 8 Tf 66 716 Td (    should_requeue = True) Tj ET
+BT /F1 10 Tf 54 695 Td (Si el proceso no termino su rafaga, significa que se le acabo el quantum.) Tj ET
+BT /F1 10 Tf 54 675 Td (Entonces debe volver al final de la cola de listos.) Tj ET
+BT /F2 12 Tf 54 647 Td (15.20 Orden correcto despues de ejecutar) Tj ET
+BT /F1 10 Tf 54 621 Td (Despues de ejecutar:) Tj ET
+BT /F3 8 Tf 66 597 Td (move_unblocked_processes\(blocked, time, ready_queue\)) Tj ET
+BT /F3 8 Tf 66 586 Td (next_arrival_index = enqueue_new_arrivals\(processes, next_arrival_index, time,) Tj ET
+BT /F3 8 Tf 66 575 Td (ready_queue\)) Tj ET
+BT /F3 8 Tf 66 564 Td (if should_requeue:) Tj ET
+BT /F3 8 Tf 66 553 Td (    ready_queue.append\(current\)) Tj ET
+BT /F1 10 Tf 54 532 Td (Primero entran procesos que terminaron E/S.) Tj ET
+BT /F1 10 Tf 54 512 Td (Luego entran procesos que llegaron durante la ejecucion.) Tj ET
+BT /F1 10 Tf 54 492 Td (Finalmente, si el proceso actual no termino, vuelve al final de la cola.) Tj ET
+BT /F1 10 Tf 54 472 Td (Este orden es importante para que Round Robin respete los procesos que llegaron mientras) Tj ET
+BT /F1 10 Tf 54 458 Td (otro estaba usando CPU.) Tj ET
+BT /F2 12 Tf 54 430 Td (15.21 Guardar estado despues del evento) Tj ET
+BT /F3 8 Tf 66 400 Td (snapshots.append\(QueueSnapshot\(time=time, reason=reason,) Tj ET
+BT /F3 8 Tf 66 389 Td (queue=queue_labels\(ready_queue\)\)\)) Tj ET
+BT /F1 10 Tf 54 368 Td (Se guarda una fotografia despues de ejecutar.) Tj ET
+BT /F2 12 Tf 54 340 Td (15.22 Agregar intercambio) Tj ET
+BT /F3 8 Tf 66 310 Td (if completed_processes < len\(processes\):) Tj ET
+BT /F3 8 Tf 66 299 Td (    pending_work = bool\(ready_queue or blocked or next_arrival_index <) Tj ET
+BT /F3 8 Tf 66 288 Td (len\(processes\)\)) Tj ET
+BT /F3 8 Tf 66 277 Td (    if context_switch_size > 0 and pending_work:) Tj ET
+BT /F1 10 Tf 54 256 Td (Si aun quedan procesos por resolver y el intercambio es mayor que cero, se agrega un bloque) Tj ET
+BT /F1 10 Tf 54 242 Td (CS.) Tj ET
+BT /F3 8 Tf 66 218 Td (add_gantt_entry\(gantt, "CS", time, time + context_switch_size\)) Tj ET
+BT /F3 8 Tf 66 207 Td (time += context_switch_size) Tj ET
+BT /F1 10 Tf 54 186 Td (Esto representa el tiempo que se pierde cambiando de un proceso a otro.) Tj ET
+BT /F1 10 Tf 54 166 Td (Despues del intercambio se vuelven a revisar E/S y llegadas:) Tj ET
+BT /F3 8 Tf 66 142 Td (move_unblocked_processes\(blocked, time, ready_queue\)) Tj ET
+BT /F3 8 Tf 66 131 Td (next_arrival_index = enqueue_new_arrivals\(processes, next_arrival_index, time,) Tj ET
+BT /F3 8 Tf 66 120 Td (ready_queue\)) Tj ET
+BT /F1 10 Tf 54 99 Td (Y se guarda otro estado de cola:) Tj ET
+BT /F3 8 Tf 66 75 Td (snapshots.append\() Tj ET
+endstream
+endobj
+19 0 obj
+<< /Length 1978 >>
+stream
+BT /F3 8 Tf 66 738 Td (    QueueSnapshot\(time=time, reason="Fin de intercambio",) Tj ET
+BT /F3 8 Tf 66 727 Td (queue=queue_labels\(ready_queue\)\)) Tj ET
+BT /F3 8 Tf 66 716 Td (\)) Tj ET
+BT /F2 12 Tf 54 687 Td (15.23 Retorno de la simulacion) Tj ET
+BT /F1 10 Tf 54 661 Td (Al final:) Tj ET
+BT /F3 8 Tf 66 637 Td (return gantt, snapshots) Tj ET
+BT /F1 10 Tf 54 616 Td (El backend entrega:) Tj ET
+BT /F1 10 Tf 66 596 Td (- todo el diagrama de Gantt.) Tj ET
+BT /F1 10 Tf 66 582 Td (- toda la historia de la cola de listos.) Tj ET
+BT /F2 14 Tf 54 552 Td (16. Funcion calculate_metrics) Tj ET
+BT /F3 8 Tf 66 519 Td (def calculate_metrics\(processes: List[Process]\) -> List[dict[str, int | str]]:) Tj ET
+BT /F1 10 Tf 54 498 Td (Esta funcion calcula los resultados finales de cada proceso.) Tj ET
+BT /F1 10 Tf 54 478 Td (Devuelve una lista de diccionarios.) Tj ET
+BT /F1 10 Tf 54 458 Td (Cada diccionario tiene datos como:) Tj ET
+BT /F1 10 Tf 66 438 Td (- proceso.) Tj ET
+BT /F1 10 Tf 66 424 Td (- llegada.) Tj ET
+BT /F1 10 Tf 66 410 Td (- CPU total.) Tj ET
+BT /F1 10 Tf 66 396 Td (- E/S total.) Tj ET
+BT /F1 10 Tf 66 382 Td (- finalizacion.) Tj ET
+BT /F1 10 Tf 66 368 Td (- tiempo de vuelta.) Tj ET
+BT /F1 10 Tf 66 354 Td (- tiempo de espera.) Tj ET
+BT /F2 12 Tf 54 326 Td (16.1 Crear lista de resultados) Tj ET
+BT /F3 8 Tf 66 296 Td (metrics: List[dict[str, int | str]] = []) Tj ET
+BT /F1 10 Tf 54 275 Td (Aqui se guardan los resultados.) Tj ET
+BT /F2 12 Tf 54 247 Td (16.2 Recorrer procesos) Tj ET
+BT /F3 8 Tf 66 217 Td (for process in processes:) Tj ET
+BT /F1 10 Tf 54 196 Td (Calcula las metricas proceso por proceso.) Tj ET
+BT /F2 12 Tf 54 168 Td (16.3 Ignorar procesos no terminados) Tj ET
+BT /F3 8 Tf 66 138 Td (if process.completion_time is None:) Tj ET
+BT /F3 8 Tf 66 127 Td (    continue) Tj ET
+BT /F1 10 Tf 54 106 Td (Si un proceso no tiene tiempo de finalizacion, no se calculan metricas para el.) Tj ET
+BT /F1 10 Tf 54 86 Td (continue salta al siguiente proceso.) Tj ET
+endstream
+endobj
+20 0 obj
+<< /Length 2278 >>
+stream
+BT /F2 12 Tf 54 738 Td (16.4 Retorno estandar) Tj ET
+BT /F3 8 Tf 66 708 Td (standard_turnaround = process.completion_time - process.arrival_time) Tj ET
+BT /F1 10 Tf 54 687 Td (Esta es la formula clasica:) Tj ET
+BT /F3 8 Tf 66 663 Td (retorno estandar = finalizacion - llegada) Tj ET
+BT /F1 10 Tf 54 642 Td (El programa la conserva internamente por si se necesita comparar.) Tj ET
+BT /F2 12 Tf 54 614 Td (16.5 Espera total estandar) Tj ET
+BT /F3 8 Tf 66 584 Td (total_waiting = standard_turnaround - process.total_cpu_time - process.total_io_time) Tj ET
+BT /F1 10 Tf 54 563 Td (Esta es la espera total clasica.) Tj ET
+BT /F1 10 Tf 54 543 Td (Resta al retorno estandar el tiempo real de CPU y E/S.) Tj ET
+BT /F1 10 Tf 54 523 Td (El programa la conserva internamente, aunque la interfaz muestra el criterio usado en clase.) Tj ET
+BT /F2 12 Tf 54 495 Td (16.6 Espera inicial) Tj ET
+BT /F3 8 Tf 66 465 Td (response = 0 if process.first_start_time is None else process.first_start_time -) Tj ET
+BT /F3 8 Tf 66 454 Td (process.arrival_time) Tj ET
+BT /F1 10 Tf 54 433 Td (Calcula cuanto espero el proceso desde que llego hasta que entro por primera vez a CPU.) Tj ET
+BT /F1 10 Tf 54 413 Td (Esta es la formula que coincide con los datos de clase:) Tj ET
+BT /F3 8 Tf 66 389 Td (tiempo de espera = primera entrada a CPU - llegada) Tj ET
+BT /F1 10 Tf 54 368 Td (Ejemplo:) Tj ET
+BT /F3 8 Tf 66 344 Td (P1 llega en 70) Tj ET
+BT /F3 8 Tf 66 333 Td (P1 entra por primera vez en 110) Tj ET
+BT /F3 8 Tf 66 322 Td (espera = 110 - 70 = 40) Tj ET
+BT /F2 12 Tf 54 293 Td (16.7 Tiempo de vuelta usado en clase) Tj ET
+BT /F3 8 Tf 66 263 Td (turnaround = standard_turnaround - process.total_io_time) Tj ET
+BT /F1 10 Tf 54 242 Td (El laboratorio de clase uso este criterio:) Tj ET
+BT /F3 8 Tf 66 218 Td (tiempo de vuelta = finalizacion - llegada - E/S total) Tj ET
+BT /F1 10 Tf 54 197 Td (Ejemplo con P0:) Tj ET
+BT /F3 8 Tf 66 173 Td (finalizacion = 1530) Tj ET
+BT /F3 8 Tf 66 162 Td (llegada = 0) Tj ET
+BT /F3 8 Tf 66 151 Td (E/S total = 400) Tj ET
+BT /F3 8 Tf 66 140 Td (tiempo de vuelta = 1530 - 0 - 400 = 1130) Tj ET
+BT /F1 10 Tf 54 119 Td (Ejemplo con P1:) Tj ET
+BT /F3 8 Tf 66 95 Td (finalizacion = 1640) Tj ET
+BT /F3 8 Tf 66 84 Td (llegada = 70) Tj ET
+BT /F3 8 Tf 66 73 Td (E/S total = 200) Tj ET
+endstream
+endobj
+21 0 obj
+<< /Length 2164 >>
+stream
+BT /F3 8 Tf 66 738 Td (tiempo de vuelta = 1640 - 70 - 200 = 1370) Tj ET
+BT /F2 12 Tf 54 709 Td (16.8 Tiempo de espera usado en clase) Tj ET
+BT /F3 8 Tf 66 679 Td (waiting = response) Tj ET
+BT /F1 10 Tf 54 658 Td (El tiempo de espera mostrado se toma como la espera inicial.) Tj ET
+BT /F1 10 Tf 54 638 Td (Por eso:) Tj ET
+BT /F3 8 Tf 66 614 Td (P0 = 0) Tj ET
+BT /F3 8 Tf 66 603 Td (P1 = 40) Tj ET
+BT /F2 12 Tf 54 574 Td (16.9 Guardar resultados) Tj ET
+BT /F3 8 Tf 66 544 Td (metrics.append\() Tj ET
+BT /F3 8 Tf 66 533 Td (    {) Tj ET
+BT /F3 8 Tf 66 522 Td (        "pid": process.pid,) Tj ET
+BT /F3 8 Tf 66 511 Td (        "arrival": process.arrival_time,) Tj ET
+BT /F3 8 Tf 66 500 Td (        "cpu": process.total_cpu_time,) Tj ET
+BT /F3 8 Tf 66 489 Td (        "io": process.total_io_time,) Tj ET
+BT /F3 8 Tf 66 478 Td (        "completion": process.completion_time,) Tj ET
+BT /F3 8 Tf 66 467 Td (        "turnaround": turnaround,) Tj ET
+BT /F3 8 Tf 66 456 Td (        "waiting": waiting,) Tj ET
+BT /F3 8 Tf 66 445 Td (        "response": response,) Tj ET
+BT /F3 8 Tf 66 434 Td (        "standard_turnaround": standard_turnaround,) Tj ET
+BT /F3 8 Tf 66 423 Td (        "total_waiting": total_waiting,) Tj ET
+BT /F3 8 Tf 66 412 Td (    }) Tj ET
+BT /F3 8 Tf 66 401 Td (\)) Tj ET
+BT /F1 10 Tf 54 380 Td (Este diccionario guarda todas las metricas.) Tj ET
+BT /F1 10 Tf 54 360 Td (La interfaz usa principalmente:) Tj ET
+BT /F1 10 Tf 66 340 Td (- pid) Tj ET
+BT /F1 10 Tf 66 326 Td (- arrival) Tj ET
+BT /F1 10 Tf 66 312 Td (- cpu) Tj ET
+BT /F1 10 Tf 66 298 Td (- io) Tj ET
+BT /F1 10 Tf 66 284 Td (- completion) Tj ET
+BT /F1 10 Tf 66 270 Td (- turnaround) Tj ET
+BT /F1 10 Tf 66 256 Td (- waiting) Tj ET
+BT /F1 10 Tf 54 236 Td (Tambien quedan guardados:) Tj ET
+BT /F1 10 Tf 66 216 Td (- response) Tj ET
+BT /F1 10 Tf 66 202 Td (- standard_turnaround) Tj ET
+BT /F1 10 Tf 66 188 Td (- total_waiting) Tj ET
+BT /F1 10 Tf 54 168 Td (Estos ultimos sirven para comparar contra las formulas estandar.) Tj ET
+BT /F2 12 Tf 54 140 Td (16.10 Retornar metricas) Tj ET
+BT /F3 8 Tf 66 110 Td (return metrics) Tj ET
+BT /F1 10 Tf 54 89 Td (Devuelve todos los resultados al frontend.) Tj ET
+endstream
+endobj
+22 0 obj
+<< /Length 2423 >>
+stream
+BT /F2 14 Tf 54 738 Td (17. Ejemplo completo con datos de clase) Tj ET
+BT /F1 10 Tf 54 709 Td (Datos:) Tj ET
+BT /F3 8 Tf 66 685 Td (Quantum = 100 ms) Tj ET
+BT /F3 8 Tf 66 674 Td (Intercambio = 10 ms) Tj ET
+BT /F3 8 Tf 66 658 Td (P0:) Tj ET
+BT /F3 8 Tf 66 647 Td (llegada = 0) Tj ET
+BT /F3 8 Tf 66 636 Td (CPU = 2Q, 1Q, 2Q) Tj ET
+BT /F3 8 Tf 66 625 Td (E/S = 2Q, 2Q) Tj ET
+BT /F3 8 Tf 66 609 Td (P1:) Tj ET
+BT /F3 8 Tf 66 598 Td (llegada = 70) Tj ET
+BT /F3 8 Tf 66 587 Td (CPU = 3Q, 3Q) Tj ET
+BT /F3 8 Tf 66 576 Td (E/S = 2Q) Tj ET
+BT /F3 8 Tf 66 560 Td (P2:) Tj ET
+BT /F3 8 Tf 66 549 Td (llegada = 260) Tj ET
+BT /F3 8 Tf 66 538 Td (CPU = 6Q) Tj ET
+BT /F3 8 Tf 66 527 Td (E/S = 0) Tj ET
+BT /F1 10 Tf 54 506 Td (Conversion a milisegundos:) Tj ET
+BT /F3 8 Tf 66 482 Td (P0 CPU = 200, 100, 200) Tj ET
+BT /F3 8 Tf 66 471 Td (P0 E/S = 200, 200) Tj ET
+BT /F3 8 Tf 66 455 Td (P1 CPU = 300, 300) Tj ET
+BT /F3 8 Tf 66 444 Td (P1 E/S = 200) Tj ET
+BT /F3 8 Tf 66 428 Td (P2 CPU = 600) Tj ET
+BT /F1 10 Tf 54 407 Td (Resultados principales:) Tj ET
+BT /F3 8 Tf 66 383 Td (P0:) Tj ET
+BT /F3 8 Tf 66 372 Td (finalizacion = 1530) Tj ET
+BT /F3 8 Tf 66 361 Td (E/S total = 400) Tj ET
+BT /F3 8 Tf 66 350 Td (tiempo de vuelta = 1530 - 0 - 400 = 1130) Tj ET
+BT /F3 8 Tf 66 339 Td (tiempo de espera = 0 - 0 = 0) Tj ET
+BT /F3 8 Tf 66 323 Td (P1:) Tj ET
+BT /F3 8 Tf 66 312 Td (finalizacion = 1640) Tj ET
+BT /F3 8 Tf 66 301 Td (E/S total = 200) Tj ET
+BT /F3 8 Tf 66 290 Td (tiempo de vuelta = 1640 - 70 - 200 = 1370) Tj ET
+BT /F3 8 Tf 66 279 Td (tiempo de espera = 110 - 70 = 40) Tj ET
+BT /F3 8 Tf 66 263 Td (P2:) Tj ET
+BT /F3 8 Tf 66 252 Td (finalizacion = 1860) Tj ET
+BT /F3 8 Tf 66 241 Td (E/S total = 0) Tj ET
+BT /F3 8 Tf 66 230 Td (tiempo de vuelta = 1860 - 260 - 0 = 1600) Tj ET
+BT /F3 8 Tf 66 219 Td (tiempo de espera = 440 - 260 = 180) Tj ET
+BT /F2 14 Tf 54 188 Td (18. Resumen mental de la simulacion) Tj ET
+BT /F1 10 Tf 54 159 Td (Puedes imaginar el simulador asi:) Tj ET
+BT /F3 8 Tf 66 135 Td (1. Tengo una cola de procesos listos.) Tj ET
+BT /F3 8 Tf 66 124 Td (2. Tomo el primero.) Tj ET
+BT /F3 8 Tf 66 113 Td (3. Lo ejecuto como maximo un quantum.) Tj ET
+BT /F3 8 Tf 66 102 Td (4. Si termino CPU y le falta E/S, lo bloqueo.) Tj ET
+BT /F3 8 Tf 66 91 Td (5. Si termino todo, guardo su finalizacion.) Tj ET
+BT /F3 8 Tf 66 80 Td (6. Si no termino CPU, vuelve al final de la cola.) Tj ET
+BT /F3 8 Tf 66 69 Td (7. Agrego el intercambio.) Tj ET
+endstream
+endobj
+23 0 obj
+<< /Length 2139 >>
+stream
+BT /F3 8 Tf 66 738 Td (8. Repito hasta que todos terminen.) Tj ET
+BT /F1 10 Tf 54 717 Td (Ese es el corazon del Round Robin.) Tj ET
+BT /F2 14 Tf 54 687 Td (19. Por que el backend esta separado del frontend) Tj ET
+BT /F1 10 Tf 54 658 Td (Separar backend y frontend hace que el proyecto sea mas facil de entender.) Tj ET
+BT /F1 10 Tf 54 638 Td (rr_backend.py responde preguntas como:) Tj ET
+BT /F3 8 Tf 66 614 Td (Que proceso se ejecuta?) Tj ET
+BT /F3 8 Tf 66 603 Td (Cuando termina?) Tj ET
+BT /F3 8 Tf 66 592 Td (Como queda la cola?) Tj ET
+BT /F3 8 Tf 66 581 Td (Cuanto dura el tiempo de vuelta?) Tj ET
+BT /F3 8 Tf 66 570 Td (Cuanto dura el tiempo de espera?) Tj ET
+BT /F1 10 Tf 54 549 Td (rr_frontend.py responde preguntas como:) Tj ET
+BT /F3 8 Tf 66 525 Td (Como muestro la tabla?) Tj ET
+BT /F3 8 Tf 66 514 Td (Como dibujo el Gantt?) Tj ET
+BT /F3 8 Tf 66 503 Td (Como leo los datos escritos por el usuario?) Tj ET
+BT /F3 8 Tf 66 492 Td (Como muestro errores?) Tj ET
+BT /F1 10 Tf 54 471 Td (Esto es una buena practica porque evita mezclar logica con interfaz.) Tj ET
+BT /F2 14 Tf 54 441 Td (20. Que deberias poder explicar en sustentacion) Tj ET
+BT /F1 10 Tf 54 412 Td (Para sustentar, lo mas importante es poder decir:) Tj ET
+BT /F3 8 Tf 66 388 Td (El backend representa cada proceso con sus rafagas de CPU y E/S.) Tj ET
+BT /F3 8 Tf 66 377 Td (La cola de listos se maneja con deque.) Tj ET
+BT /F3 8 Tf 66 366 Td (El simulador toma el primer proceso de la cola y lo ejecuta maximo durante un) Tj ET
+BT /F3 8 Tf 66 355 Td (quantum.) Tj ET
+BT /F3 8 Tf 66 344 Td (Si el proceso no termina la rafaga, vuelve al final de la cola.) Tj ET
+BT /F3 8 Tf 66 333 Td (Si termina una rafaga y tiene E/S, pasa a bloqueados.) Tj ET
+BT /F3 8 Tf 66 322 Td (Si termina todas sus rafagas, se guarda su tiempo de finalizacion.) Tj ET
+BT /F3 8 Tf 66 311 Td (El Gantt se construye agregando bloques de procesos, intercambio e inactividad.) Tj ET
+BT /F3 8 Tf 66 300 Td (Las metricas se calculan al final segun las formulas usadas en clase.) Tj ET
+BT /F1 10 Tf 54 279 Td (Con eso puedes explicar tanto la parte tecnica como la parte teorica del laboratorio.) Tj ET
+endstream
+endobj
+24 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 4 0 R >>
+endobj
+25 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 5 0 R >>
+endobj
+26 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 6 0 R >>
+endobj
+27 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 7 0 R >>
+endobj
+28 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 8 0 R >>
+endobj
+29 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 9 0 R >>
+endobj
+30 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 10 0 R >>
+endobj
+31 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 11 0 R >>
+endobj
+32 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 12 0 R >>
+endobj
+33 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 13 0 R >>
+endobj
+34 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 14 0 R >>
+endobj
+35 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 15 0 R >>
+endobj
+36 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 16 0 R >>
+endobj
+37 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 17 0 R >>
+endobj
+38 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 18 0 R >>
+endobj
+39 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 19 0 R >>
+endobj
+40 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 20 0 R >>
+endobj
+41 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 21 0 R >>
+endobj
+42 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 22 0 R >>
+endobj
+43 0 obj
+<< /Type /Page /Parent 44 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 1 0 R /F2 2 0 R /F3 3 0 R >> >> /Contents 23 0 R >>
+endobj
+44 0 obj
+<< /Type /Pages /Kids [ 24 0 R 25 0 R 26 0 R 27 0 R 28 0 R 29 0 R 30 0 R 31 0 R 32 0 R 33 0 R 34 0 R 35 0 R 36 0 R 37 0 R 38 0 R 39 0 R 40 0 R 41 0 R 42 0 R 43 0 R ] /Count 20 >>
+endobj
+45 0 obj
+<< /Type /Catalog /Pages 44 0 R >>
+endobj
+xref
+0 46
+0000000000 65535 f 
+0000000015 00000 n 
+0000000112 00000 n 
+0000000214 00000 n 
+0000000309 00000 n 
+0000003195 00000 n 
+0000005237 00000 n 
+0000007294 00000 n 
+0000009466 00000 n 
+0000011497 00000 n 
+0000013577 00000 n 
+0000016034 00000 n 
+0000018404 00000 n 
+0000020840 00000 n 
+0000023316 00000 n 
+0000025757 00000 n 
+0000027990 00000 n 
+0000030079 00000 n 
+0000032455 00000 n 
+0000035302 00000 n 
+0000037333 00000 n 
+0000039664 00000 n 
+0000041881 00000 n 
+0000044357 00000 n 
+0000046549 00000 n 
+0000046697 00000 n 
+0000046845 00000 n 
+0000046993 00000 n 
+0000047141 00000 n 
+0000047289 00000 n 
+0000047437 00000 n 
+0000047586 00000 n 
+0000047735 00000 n 
+0000047884 00000 n 
+0000048033 00000 n 
+0000048182 00000 n 
+0000048331 00000 n 
+0000048480 00000 n 
+0000048629 00000 n 
+0000048778 00000 n 
+0000048927 00000 n 
+0000049076 00000 n 
+0000049225 00000 n 
+0000049374 00000 n 
+0000049523 00000 n 
+0000049718 00000 n 
+trailer
+<< /Size 46 /Root 45 0 R >>
+startxref
+49769
+%%EOF
