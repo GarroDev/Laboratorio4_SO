@@ -540,11 +540,19 @@ class RoundRobinApp:
             return
 
         colors = {"CS": "#f1c776", "IDLE": "#d8d8d8"}
+        quantum_size = max(1, int(self.quantum_var.get()))
         x = 24
-        y = 45
+        y = 58
         height = 58
 
-        self.gantt_canvas.create_text(24, 18, text="Tiempo", anchor="w", font=("Segoe UI Semibold", 10), fill="#29445f")
+        self.gantt_canvas.create_text(
+            24,
+            18,
+            text="Quantum",
+            anchor="w",
+            font=("Segoe UI Semibold", 10),
+            fill="#29445f",
+        )
         self.gantt_canvas.create_text(x, y + height + 18, text=str(gantt[0].start), anchor="center", font=("Segoe UI", 9))
 
         for entry in gantt:
@@ -558,6 +566,15 @@ class RoundRobinApp:
                 font=("Segoe UI Semibold", 10),
                 fill="#1f1f1f",
             )
+            if entry.label != "IDLE":
+                quantum_text = self._format_quantum_count(entry.end - entry.start, quantum_size)
+                self.gantt_canvas.create_text(
+                    x + width / 2,
+                    y - 16,
+                    text=quantum_text,
+                    font=("Segoe UI Semibold", 9),
+                    fill="#29445f",
+                )
             self.gantt_canvas.create_text(
                 x + width,
                 y + height + 18,
@@ -572,6 +589,13 @@ class RoundRobinApp:
         viewport_width = max(self.gantt_canvas.winfo_width(), 1)
         self.gantt_canvas.configure(scrollregion=(0, 0, max(content_width, viewport_width + 1), 160))
         self.gantt_canvas.xview_moveto(0.0)
+
+    def _format_quantum_count(self, duration: int, quantum_size: int) -> str:
+        if duration % quantum_size == 0:
+            return f"{duration // quantum_size}Q"
+
+        quantum_count = duration / quantum_size
+        return f"{quantum_count:.2f}".rstrip("0").rstrip(".") + "Q"
 
     def _bind_gantt_scroll(self) -> None:
         self.gantt_canvas.bind("<Shift-MouseWheel>", self._on_gantt_shift_mousewheel)
